@@ -212,9 +212,11 @@
                                 <div class="form-group" style="grid-column: span 2;">
                                     <label class="form-label">Asignar a Simulador</label>
                                     <select class="form-input" v-model="assignCustomSimId" required>
-                                        <option v-for="sim in simulators" :key="sim.id" v-if="sim.active" :value="sim.id">
-                                            {{ sim.name }} ({{ sim.group }})
-                                        </option>
+                                        <template v-for="sim in simulators" :key="sim.id">
+                                            <option v-if="sim.active" :value="sim.id">
+                                                {{ sim.name }} ({{ sim.group }})
+                                            </option>
+                                        </template>
                                     </select>
                                 </div>
                             </div>
