@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cola de Espera | Zona VR</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="vue.js"></script>
+</head>
+<body>
+    <div id="app" class="fade-in">
+        <!-- ENCABEZADO -->
+        <header>
+            <div class="logo">
+                Zona<span>VR</span>
+            </div>
+            <div class="nav-badge">
+                <span class="dot" :class="{ disconnected: !connected }"></span>
+                {{ connected ? 'En Línea' : 'Desconectado' }}
+            </div>
+        </header>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <div class="container mobile-view">
+            <div class="center-container">
+                <h1 class="mobile-title">Estado de la Sala</h1>
+            </div>
+
+            <!-- SIMULADORES ACTIVOS -->
+            <div class="panel">
+                <h2 class="panel-title">🎮 Simuladores en Juego</h2>
+                <div class="sim-grid-mobile">
+                    <!-- Simuladores que están activos para jugar hoy -->
+                    <template v-for="sim in simulators" :key="sim.id">
+                        <div v-if="sim.active" class="sim-card" :class="[sim.status, { warning: isTimeWarning(sim), finished: isTimeFinished(sim) }]">
+                            <div class="sim-header">
+                                <div class="sim-name">{{ sim.name }}</div>
+                                <div class="sim-status-badge" :class="'status-' + sim.status">
+                                    {{ sim.status === 'playing' ? 'En juego' : sim.status === 'paused' ? 'Pausado' : 'Disponible' }}
+                                </div>
+                            </div>
+                            
+                            <div class="sim-body">
+                                <div v-if="sim.status === 'available'" class="sim-empty-state">
+                                    Listo para el siguiente grupo
+                                </div>
+                                <div v-else>
+                                    <div class="sim-group-name">{{ sim.current_session.group_name }}</div>
+                                    <div class="sim-map-name">{{ sim.current_session.map }}</div>
+                                    
+                                    <!-- Temporizador -->
+                                    <div class="timer-container">
+                                        <div class="timer-digits" :class="{ warning: isTimeWarning(sim), finished: isTimeFinished(sim) }">
+                                            {{ isTimeFinished(sim) ? '00:00' : formatTime(sim.current_session.time_left) }}
+                                            <span class="label" v-if="isTimeFinished(sim)">¡Tiempo acabado!</span>
+                                        </div>
+                                        <!-- Barra de Progreso -->
+                                        <div class="progress-bar-bg">
+                                            <div class="progress-bar-fill" :style="{ width: getProgress(sim) + '%' }"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                    
+                    <div v-if="!simulators.some(s => s.active)" class="queue-empty">
+                        No hay simuladores activos en este momento.
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLA DE ESPERA -->
+            <div class="panel">
+                <h2 class="panel-title">
+                    📋 Siguiente en Cola
+                    <span class="badge-count" v-if="queue.length > 0">{{ queue.length }}</span>
+                </h2>
+                
+                <div class="queue-list">
+                    <div v-for="(item, index) in queue" :key="item.id" class="queue-item">
+                        <div class="queue-info">
+                            <div class="queue-group">
+                                <span class="queue-index">{{ index + 1 }}</span>
+                                {{ item.group_name }}
+                            </div>
+                            <div class="queue-meta">
+                                <span>🎮 {{ item.map }}</span>
+                                <span>⏱️ {{ Math.round(item.duration / 60) }} min</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div v-if="queue.length === 0" class="queue-empty">
+                        ¡No hay nadie en la cola! Acércate al mostrador para jugar.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cargar App -->
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,682 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Rajdhani:wght@500;700&display=swap');
+
+:root {
+    --bg-dark: #070913;
+    --bg-card: rgba(18, 22, 45, 0.65);
+    --bg-card-hover: rgba(28, 33, 65, 0.85);
+    --border-card: rgba(255, 255, 255, 0.06);
+    
+    --color-cyan: #00f2fe;
+    --color-magenta: #f857a6;
+    --color-purple: #7f00ff;
+    --color-green: #39ff14;
+    --color-yellow: #ffe600;
+    --color-red: #ff3366;
+    
+    --text-primary: #ffffff;
+    --text-secondary: #9aa5b5;
+    --text-muted: #626f84;
+    
+    --font-outfit: 'Outfit', sans-serif;
+    --font-rajdhani: 'Rajdhani', sans-serif;
+    
+    --shadow-neon-cyan: 0 0 15px rgba(0, 242, 254, 0.25);
+    --shadow-neon-magenta: 0 0 15px rgba(248, 87, 166, 0.25);
+    --shadow-neon-green: 0 0 15px rgba(57, 255, 20, 0.25);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    font-family: var(--font-outfit);
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image: 
+        radial-gradient(circle at 10% 20%, rgba(127, 0, 255, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(0, 242, 254, 0.08) 0%, transparent 40%);
+    background-attachment: fixed;
+}
+
+/* --- LOGO / ENCABEZADO --- */
+header {
+    background: rgba(7, 9, 19, 0.8);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-card);
+    padding: 1.2rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.logo {
+    font-family: var(--font-rajdhani);
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, var(--color-cyan) 0%, var(--color-purple) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-transform: uppercase;
+}
+
+.logo span {
+    color: var(--text-primary);
+    -webkit-text-fill-color: initial;
+    font-weight: 300;
+}
+
+.nav-badge {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-card);
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nav-badge .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--color-green);
+    box-shadow: 0 0 8px var(--color-green);
+}
+
+.nav-badge .dot.disconnected {
+    background-color: var(--color-red);
+    box-shadow: 0 0 8px var(--color-red);
+    animation: pulse 1.5s infinite;
+}
+
+/* --- CONTENEDORES --- */
+.container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+}
+
+/* --- DISEÑO DE COLUMNAS (GRID) --- */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* --- PANELES / CONTENEDORES GLASSMORPHISM --- */
+.panel {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-card);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.panel:hover {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.panel-title {
+    font-family: var(--font-rajdhani);
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 1.2rem;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 0.6rem;
+}
+
+/* --- TARJETAS DE SIMULADORES --- */
+.simulators-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.sim-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-card);
+    border-radius: 12px;
+    padding: 1.2rem;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.sim-card:hover {
+    background: var(--bg-card-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+}
+
+.sim-card.playing {
+    border-left: 4px solid var(--color-cyan);
+    box-shadow: var(--shadow-neon-cyan);
+}
+
+.sim-card.paused {
+    border-left: 4px solid var(--color-yellow);
+    box-shadow: 0 0 15px rgba(255, 230, 0, 0.15);
+}
+
+.sim-card.available {
+    border-left: 4px solid var(--color-green);
+    box-shadow: var(--shadow-neon-green);
+}
+
+.sim-card.inactive {
+    opacity: 0.5;
+    border-left: 4px solid var(--text-muted);
+}
+
+.sim-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.sim-name {
+    font-family: var(--font-rajdhani);
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.sim-status-badge {
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    letter-spacing: 1px;
+}
+
+.status-playing {
+    background: rgba(0, 242, 254, 0.1);
+    color: var(--color-cyan);
+    border: 1px solid rgba(0, 242, 254, 0.2);
+}
+
+.status-paused {
+    background: rgba(255, 230, 0, 0.1);
+    color: var(--color-yellow);
+    border: 1px solid rgba(255, 230, 0, 0.2);
+}
+
+.status-available {
+    background: rgba(57, 255, 20, 0.1);
+    color: var(--color-green);
+    border: 1px solid rgba(57, 255, 20, 0.2);
+}
+
+.status-inactive {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sim-body {
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.sim-empty-state {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-style: italic;
+    text-align: center;
+}
+
+.sim-group-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.sim-map-name {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.sim-map-name::before {
+    content: "🗺️";
+    font-size: 0.8rem;
+}
+
+/* --- TEMPORIZADOR GRANDE --- */
+.timer-container {
+    margin-top: 1rem;
+}
+
+.timer-digits {
+    font-family: var(--font-rajdhani);
+    font-size: 2.2rem;
+    font-weight: 700;
+    line-height: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 0.2rem;
+}
+
+.timer-digits.warning {
+    color: var(--color-magenta);
+    animation: flash 1s infinite alternate;
+}
+
+.timer-digits.finished {
+    color: var(--color-red);
+    animation: flash 0.5s infinite alternate;
+}
+
+.timer-digits span.label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-family: var(--font-outfit);
+    font-weight: 400;
+    text-transform: uppercase;
+}
+
+/* Barra de progreso */
+.progress-bar-bg {
+    background: rgba(255, 255, 255, 0.05);
+    height: 6px;
+    border-radius: 3px;
+    margin-top: 0.5rem;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--color-purple) 0%, var(--color-cyan) 100%);
+    width: 0%;
+    transition: width 1s linear;
+}
+
+.playing .progress-bar-fill {
+    background: linear-gradient(90deg, var(--color-purple) 0%, var(--color-cyan) 100%);
+}
+
+.paused .progress-bar-fill {
+    background: var(--color-yellow);
+    opacity: 0.8;
+}
+
+.warning .progress-bar-fill {
+    background: linear-gradient(90deg, var(--color-magenta) 0%, var(--color-red) 100%);
+}
+
+/* --- TABLAS Y LISTAS DE ESPERA --- */
+.queue-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.queue-item {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-card);
+    border-radius: 10px;
+    padding: 0.9rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.queue-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.queue-info {
+    flex: 1;
+}
+
+.queue-group {
+    font-weight: 600;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.queue-index {
+    background: var(--color-purple);
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 800;
+}
+
+.queue-meta {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 0.2rem;
+    display: flex;
+    gap: 1rem;
+}
+
+.queue-empty {
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 2rem 0;
+}
+
+/* --- BOTONES Y CONTROLES --- */
+.btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-card);
+    color: var(--text-primary);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-family: var(--font-outfit);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--color-purple) 0%, var(--color-cyan) 100%);
+    border: none;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #8b1eff 0%, #00dcf5 100%);
+    box-shadow: var(--shadow-neon-cyan);
+}
+
+.btn-sm {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+    border-radius: 6px;
+}
+
+.btn-danger {
+    background: rgba(255, 51, 102, 0.15);
+    border: 1px solid rgba(255, 51, 102, 0.3);
+    color: #ff557f;
+}
+
+.btn-danger:hover {
+    background: rgba(255, 51, 102, 0.3);
+    color: white;
+}
+
+.btn-success {
+    background: rgba(57, 255, 20, 0.15);
+    border: 1px solid rgba(57, 255, 20, 0.3);
+    color: var(--color-green);
+}
+
+.btn-success:hover {
+    background: rgba(57, 255, 20, 0.3);
+    color: white;
+}
+
+.btn-warning {
+    background: rgba(255, 230, 0, 0.15);
+    border: 1px solid rgba(255, 230, 0, 0.3);
+    color: var(--color-yellow);
+}
+
+.btn-warning:hover {
+    background: rgba(255, 230, 0, 0.3);
+    color: white;
+}
+
+.btn-group {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.btn-group.full-width {
+    width: 100%;
+}
+
+.btn-group.full-width .btn {
+    flex: 1;
+    justify-content: center;
+}
+
+/* Controles de tarjeta de admin */
+.sim-controls {
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    margin-top: 0.8rem;
+    padding-top: 0.8rem;
+}
+
+/* --- FORMULARIOS --- */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+}
+
+.form-input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-card);
+    border-radius: 8px;
+    padding: 0.6rem 0.8rem;
+    color: white;
+    font-family: var(--font-outfit);
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--color-cyan);
+    box-shadow: 0 0 8px rgba(0, 242, 254, 0.2);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+/* --- MODALES / POPUPS (Para añadir simuladores, etc) --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: #0f1224;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 450px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+
+/* --- ANIMACIONES --- */
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes flash {
+    0% { opacity: 1; }
+    100% { opacity: 0.4; }
+}
+
+/* Animaciones de entrada */
+.fade-in {
+    animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- DISEÑO MÓVIL (VISTA DE CLIENTE) --- */
+.mobile-view {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.mobile-title {
+    font-family: var(--font-rajdhani);
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+    text-align: center;
+    border-bottom: 2px solid var(--color-purple);
+    display: inline-block;
+    padding-bottom: 0.3rem;
+}
+
+.center-container {
+    text-align: center;
+}
+
+.sim-grid-mobile {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.2rem;
+}
+
+.badge-count {
+    background: var(--color-cyan);
+    color: var(--bg-dark);
+    padding: 0.1rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 800;
+}
+
+/* Interruptor Deslizable (Switch) */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 24px;
+}
+
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255,255,255,0.1);
+  transition: .3s;
+  border-radius: 24px;
+  border: 1px solid var(--border-card);
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: var(--text-secondary);
+  transition: .3s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: rgba(0, 242, 254, 0.2);
+  border-color: var(--color-cyan);
+}
+
+input:checked + .slider:before {
+  transform: translateX(22px);
+  background-color: var(--color-cyan);
+  box-shadow: 0 0 8px var(--color-cyan);
+}
+
+/* Controles extras del panel admin */
+.admin-toolbar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
