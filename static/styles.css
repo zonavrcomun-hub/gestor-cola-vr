@@ -680,3 +680,82 @@ input:checked + .slider:before {
     margin-bottom: 1.5rem;
     flex-wrap: wrap;
 }
+
+/* --- TABLERO EN COLUMNAS (DISEÑO SOLICITADO) --- */
+.client-board-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+    align-items: start;
+    margin-top: 1rem;
+}
+
+.sim-column {
+    background: rgba(18, 22, 45, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-card);
+    border-radius: 16px;
+    padding: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.sim-column-header {
+    font-family: var(--font-rajdhani);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 0.5rem;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.sim-column-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Estilo para tarjetas en espera */
+.sim-card.waiting {
+    border-left: 4px solid var(--color-magenta);
+    box-shadow: var(--shadow-neon-magenta);
+    background: rgba(248, 87, 166, 0.03);
+}
+
+.sim-card.waiting:hover {
+    background: rgba(248, 87, 166, 0.06);
+}
+
+.status-waiting {
+    background: rgba(248, 87, 166, 0.1);
+    color: var(--color-magenta);
+    border: 1px solid rgba(248, 87, 166, 0.2);
+}
+
+/* Formato Labe-Valor dentro de tarjetas */
+.sim-card-row {
+    display: grid;
+    grid-template-columns: 105px 1fr;
+    gap: 0.4rem;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 0.25rem;
+}
+
+.sim-card-label {
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.sim-card-val {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+

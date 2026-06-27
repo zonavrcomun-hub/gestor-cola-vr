@@ -19,13 +19,15 @@ createApp({
             editingSimName: '',
             editingSimGroup: '',
             
-            // Modal de Asignación / Inicio de Sesión
+            // Modal de Asignación / Inicio de Sesión / Cola
             showAssignModal: false,
             selectedSimForAssign: null,
             assignFromQueueSelectedId: '',
             assignCustomGroup: '',
             assignCustomMap: 'Beat Saber',
             assignCustomDuration: 10, // en minutos
+            assignCustomSimId: '',
+            assignCustomPlayersCount: 1,
             
             // Mapas predefinidos
             predefinedMaps: [
@@ -133,6 +135,12 @@ createApp({
         updateLocalState(data) {
             this.simulators = data.simulators || [];
             this.queue = data.queue || [];
+            
+            // Pre-rellenar el simulador seleccionado por defecto para agregar a la cola
+            if (!this.assignCustomSimId && this.simulators.length > 0) {
+                const firstActive = this.simulators.find(s => s.active);
+                this.assignCustomSimId = firstActive ? firstActive.id : this.simulators[0].id;
+            }
         },
         
         // --- TIC-TAC LOCAL ---
@@ -267,6 +275,10 @@ createApp({
         // --- OPERACIONES DE COLA ---
         async addToQueue() {
             if (!this.assignCustomGroup.trim()) return;
+            if (!this.assignCustomSimId) {
+                alert('Por favor selecciona un simulador');
+                return;
+            }
             try {
                 const res = await fetch('/api/queue', {
                     method: 'POST',
@@ -274,13 +286,16 @@ createApp({
                     body: JSON.stringify({
                         group_name: this.assignCustomGroup.trim(),
                         map: this.assignCustomMap.trim(),
-                        duration: parseInt(this.assignCustomDuration)
+                        duration: parseInt(this.assignCustomDuration),
+                        players_count: parseInt(this.assignCustomPlayersCount || 1),
+                        target_sim_id: this.assignCustomSimId
                     })
                 });
                 if (res.ok) {
                     this.assignCustomGroup = '';
                     this.assignCustomMap = 'Beat Saber';
                     this.assignCustomDuration = 10;
+                    this.assignCustomPlayersCount = 1;
                 }
             } catch (e) {
                 alert('Error al agregar a la lista de espera');
@@ -295,20 +310,29 @@ createApp({
             }
         },
         
-        async moveQueueItem(index, direction) {
-            const newQueue = [...this.queue];
-            const targetIndex = index + direction;
-            if (targetIndex < 0 || targetIndex >= newQueue.length) return;
+        async moveQueueItem(simId, itemIndex, direction) {
+            const simQueue = this.getQueueForSim(simId);
+            const targetIndex = itemIndex + direction;
+            if (targetIndex < 0 || targetIndex >= simQueue.length) return;
             
-            // Intercambiar
-            const temp = newQueue[index];
-            newQueue[index] = newQueue[targetIndex];
-            newQueue[targetIndex] = temp;
+            // Intercambiar en la cola filtrada del simulador
+            const temp = simQueue[itemIndex];
+            simQueue[itemIndex] = simQueue[targetIndex];
+            simQueue[targetIndex] = temp;
             
-            // Actualizar localmente rápido
+            // Reconstruir la cola completa manteniendo el orden de otros simuladores
+            const newQueue = [];
+            let simQueueIdx = 0;
+            this.queue.forEach(q => {
+                if (q.target_sim_id === simId) {
+                    newQueue.push(simQueue[simQueueIdx++]);
+                } else {
+                    newQueue.push(q);
+                }
+            });
+            
             this.queue = newQueue;
             
-            // Enviar orden al servidor
             try {
                 await fetch('/api/queue/reorder', {
                     method: 'POST',
@@ -326,14 +350,16 @@ createApp({
             this.showAssignModal = true;
             this.assignFromQueueSelectedId = '';
             
-            // Auto rellenar con el primero de la cola si existe
-            if (this.queue.length > 0) {
-                this.assignFromQueueSelectedId = this.queue[0].id;
+            const simQueue = this.getQueueForSim(sim.id);
+            // Auto rellenar con el primero de la cola de este simulador si existe
+            if (simQueue.length > 0) {
+                this.assignFromQueueSelectedId = simQueue[0].id;
                 this.onQueueSelectChange();
             } else {
                 this.assignCustomGroup = '';
                 this.assignCustomMap = 'Beat Saber';
                 this.assignCustomDuration = 10;
+                this.assignCustomPlayersCount = 1;
             }
         },
         
@@ -344,11 +370,13 @@ createApp({
                     this.assignCustomGroup = selected.group_name;
                     this.assignCustomMap = selected.map;
                     this.assignCustomDuration = Math.round(selected.duration / 60);
+                    this.assignCustomPlayersCount = selected.players_count || 1;
                 }
             } else {
                 this.assignCustomGroup = '';
                 this.assignCustomMap = 'Beat Saber';
                 this.assignCustomDuration = 10;
+                this.assignCustomPlayersCount = 1;
             }
         },
         
@@ -361,7 +389,8 @@ createApp({
             const payload = {
                 group_name: this.assignCustomGroup.trim(),
                 map: this.assignCustomMap.trim(),
-                duration: parseInt(this.assignCustomDuration)
+                duration: parseInt(this.assignCustomDuration),
+                players_count: parseInt(this.assignCustomPlayersCount || 1)
             };
             
             if (this.assignFromQueueSelectedId) {
@@ -419,6 +448,28 @@ createApp({
             } catch (e) {
                 alert('Error al detener la sesión');
             }
+        },
+        
+        getQueueForSim(simId) {
+            return this.queue.filter(q => q.target_sim_id === simId);
+        },
+        
+        getEstimatedWaitTime(simId, queueItemIndex) {
+            const sim = this.simulators.find(s => s.id === simId);
+            if (!sim) return 0;
+            
+            let totalWait = 0;
+            if (sim.status !== 'available' && sim.current_session) {
+                totalWait += sim.current_session.time_left || 0;
+            }
+            
+            const simQueue = this.getQueueForSim(simId);
+            for (let i = 0; i < queueItemIndex; i++) {
+                if (simQueue[i]) {
+                    totalWait += simQueue[i].duration || 0;
+                }
+            }
+            return totalWait;
         }
     }
 }).mount('#app');

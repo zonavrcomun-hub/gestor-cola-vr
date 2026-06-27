@@ -147,6 +147,35 @@
                                         </div>
                                     </div>
                                     
+                                    <!-- Cola de Espera para este Simulador (En espera) -->
+                                    <div style="margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 1rem;" v-if="sim.active">
+                                        <h4 style="font-family: var(--font-rajdhani); font-size: 0.9rem; color: var(--color-magenta); text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 0.5px;">
+                                            📋 Cola de Espera ({{ getQueueForSim(sim.id).length }})
+                                        </h4>
+                                        <div v-if="getQueueForSim(sim.id).length === 0" style="color: var(--text-muted); font-size: 0.8rem; font-style: italic; text-align: center; padding: 0.5rem 0;">
+                                            Sin cola de espera
+                                        </div>
+                                        <div v-else style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 200px; overflow-y: auto; padding-right: 2px;">
+                                            <div v-for="(item, index) in getQueueForSim(sim.id)" :key="item.id" 
+                                                 style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); padding: 0.6rem; border-radius: 8px; font-size: 0.8rem;">
+                                                <div style="font-weight: bold; color: var(--text-primary); display: flex; justify-content: space-between; align-items: center;">
+                                                    <span>#{{ index + 1 }} - {{ item.group_name }}</span>
+                                                    <span style="color: var(--color-yellow); font-weight: 600;">~{{ Math.ceil(getEstimatedWaitTime(sim.id, index) / 60) }}m</span>
+                                                </div>
+                                                <div style="color: var(--text-secondary); margin-top: 0.25rem; display: flex; justify-content: space-between; font-size: 0.75rem;">
+                                                    <span>👥 {{ item.players_count || 1 }} jug.</span>
+                                                    <span>🎮 {{ item.map }}</span>
+                                                </div>
+                                                <!-- Controles de reordenar de este simulador -->
+                                                <div style="margin-top: 0.5rem; display: flex; gap: 0.3rem;">
+                                                    <button type="button" class="btn btn-sm" style="padding: 1px 6px; font-size: 0.65rem;" :disabled="index === 0" @click="moveQueueItem(sim.id, index, -1)">▲</button>
+                                                    <button type="button" class="btn btn-sm" style="padding: 1px 6px; font-size: 0.65rem;" :disabled="index === getQueueForSim(sim.id).length - 1" @click="moveQueueItem(sim.id, index, 1)">▼</button>
+                                                    <button type="button" class="btn btn-danger btn-sm" style="padding: 1px 6px; font-size: 0.65rem; margin-left: auto;" @click="removeFromQueue(item.id)">🗑️ Quitar</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
                                     <!-- Eliminar Simulador (solo cuando esté libre) -->
                                     <div style="display: flex; justify-content: flex-end; margin-top: 0.8rem; border-top: 1px solid rgba(255,255,255,0.03); padding-top: 0.5rem;" v-if="sim.status === 'available' || !sim.active">
                                         <button class="btn btn-danger btn-sm" style="background: transparent; border:none; color: var(--text-muted); padding: 2px 6px;" @click="deleteSimulator(sim.id)">
@@ -171,15 +200,31 @@
                             </div>
                             <div class="form-row">
                                 <div class="form-group">
+                                    <label class="form-label">Nº Jugadores</label>
+                                    <input type="number" class="form-input" v-model.number="assignCustomPlayersCount" min="1" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Duración (minutos)</label>
+                                    <input type="number" class="form-input" v-model.number="assignCustomDuration" min="1" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group" style="grid-column: span 2;">
+                                    <label class="form-label">Asignar a Simulador</label>
+                                    <select class="form-input" v-model="assignCustomSimId" required>
+                                        <option v-for="sim in simulators" :key="sim.id" v-if="sim.active" :value="sim.id">
+                                            {{ sim.name }} ({{ sim.group }})
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row" style="margin-top: 1rem;">
+                                <div class="form-group" style="grid-column: span 2;">
                                     <label class="form-label">Mapa / Juego</label>
                                     <input type="text" class="form-input" v-model="assignCustomMap" placeholder="Ej: Beat Saber" list="maps-list">
                                     <datalist id="maps-list">
                                         <option v-for="map in predefinedMaps" :value="map">{{ map }}</option>
                                     </datalist>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Duración (minutos)</label>
-                                    <input type="number" class="form-input" v-model.number="assignCustomDuration" min="1" required>
                                 </div>
                             </div>
                             <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 0.5rem;">
@@ -191,32 +236,26 @@
                     <!-- TABLA DE LA COLA -->
                     <div class="panel">
                         <h2 class="panel-title">
-                            📋 Lista de Espera
+                            📋 Cola General
                             <span class="badge-count" v-if="queue.length > 0">{{ queue.length }}</span>
                         </h2>
                         
                         <div class="queue-list">
                             <div v-for="(item, index) in queue" :key="item.id" class="queue-item">
                                 <div class="queue-info">
-                                    <div class="queue-group">
-                                        <span class="queue-index">{{ index + 1 }}</span>
-                                        {{ item.group_name }}
+                                    <div class="queue-group" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                            <span class="queue-index">{{ index + 1 }}</span>
+                                            <span style="font-weight: 700;">{{ item.group_name }}</span>
+                                        </div>
+                                        <span class="sim-status-badge status-playing" style="font-size: 0.7rem; font-weight: bold; border-radius: 4px; padding: 0.15rem 0.4rem;">
+                                            🖥️ {{ (simulators.find(s => s.id === item.target_sim_id) || {}).name || 'Cualquiera' }}
+                                        </span>
                                     </div>
-                                    <div class="queue-meta">
+                                    <div class="queue-meta" style="margin-top: 0.4rem; font-size: 0.8rem; color: var(--text-secondary); display: flex; gap: 1rem;">
+                                        <span>👥 {{ item.players_count || 1 }} jug.</span>
                                         <span>🎮 {{ item.map }}</span>
                                         <span>⏱️ {{ Math.round(item.duration / 60) }} min</span>
-                                    </div>
-                                    <!-- Controles de reordenar y eliminar -->
-                                    <div style="margin-top: 0.6rem; display: flex; gap: 0.4rem; flex-wrap: wrap;">
-                                        <button class="btn btn-sm" :disabled="index === 0" @click="moveQueueItem(index, -1)">
-                                            ▲
-                                        </button>
-                                        <button class="btn btn-sm" :disabled="index === queue.length - 1" @click="moveQueueItem(index, 1)">
-                                            ▼
-                                        </button>
-                                        <button class="btn btn-danger btn-sm" @click="removeFromQueue(item.id)">
-                                            🗑️ Quitar
-                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -276,16 +315,21 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Mapa / Juego</label>
-                            <input type="text" class="form-input" v-model="assignCustomMap" placeholder="Ej: Beat Saber" list="modal-maps-list">
-                            <datalist id="modal-maps-list">
-                                <option v-for="map in predefinedMaps" :value="map">{{ map }}</option>
-                            </datalist>
+                            <label class="form-label">Nº Jugadores</label>
+                            <input type="number" class="form-input" v-model.number="assignCustomPlayersCount" min="1" required>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Duración (minutos)</label>
                             <input type="number" class="form-input" v-model.number="assignCustomDuration" min="1" required>
                         </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label class="form-label">Mapa / Juego</label>
+                        <input type="text" class="form-input" v-model="assignCustomMap" placeholder="Ej: Beat Saber" list="modal-maps-list">
+                        <datalist id="modal-maps-list">
+                            <option v-for="map in predefinedMaps" :value="map">{{ map }}</option>
+                        </datalist>
                     </div>
 
                     <div class="btn-group full-width" style="margin-top: 1.5rem;">

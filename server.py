@@ -22,6 +22,7 @@ def load_data():
             {
                 "id": "sim_1",
                 "name": "Simulador 1 (VR Racing)",
+                "group": "Simuladores de Coches",
                 "active": True,
                 "status": "available", # 'available', 'playing', 'paused'
                 "current_session": None
@@ -29,6 +30,7 @@ def load_data():
             {
                 "id": "sim_2",
                 "name": "Simulador 2 (VR Stand)",
+                "group": "Cabinas VR",
                 "active": True,
                 "status": "available",
                 "current_session": None
@@ -36,6 +38,7 @@ def load_data():
             {
                 "id": "sim_3",
                 "name": "Simulador 3 (Oculus Quest)",
+                "group": "Oculus Standalone",
                 "active": True,
                 "status": "available",
                 "current_session": None
@@ -44,14 +47,44 @@ def load_data():
         "queue": []
     }
     
+    loaded_state = default_state
     if os.path.exists(DATA_FILE):
         try:
             with open(DATA_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                loaded_state = json.load(f)
         except Exception as e:
             print(f"Error loading {DATA_FILE}, using defaults: {e}")
-            return default_state
-    return default_state
+            loaded_state = default_state
+            
+    # MIGRACIÓN / NORMALIZACIÓN DE DATOS (Asegura compatibilidad)
+    if "simulators" not in loaded_state:
+        loaded_state["simulators"] = default_state["simulators"]
+    if "queue" not in loaded_state:
+        loaded_state["queue"] = []
+        
+    active_sims = [s for s in loaded_state["simulators"] if s.get("active", True)]
+    default_sim_id = active_sims[0]["id"] if active_sims else "sim_1"
+    
+    for sim in loaded_state["simulators"]:
+        if "group" not in sim:
+            sim["group"] = "General"
+        if "active" not in sim:
+            sim["active"] = True
+        if "status" not in sim:
+            sim["status"] = "available"
+        if "current_session" not in sim:
+            sim["current_session"] = None
+        elif sim["current_session"]:
+            if "players_count" not in sim["current_session"]:
+                sim["current_session"]["players_count"] = 1
+                
+    for q in loaded_state["queue"]:
+        if "target_sim_id" not in q:
+            q["target_sim_id"] = default_sim_id
+        if "players_count" not in q:
+            q["players_count"] = 1
+            
+    return loaded_state
 
 state = load_data()
 
@@ -284,23 +317,32 @@ def add_to_queue():
     group_name = data.get('group_name', '').strip()
     map_name = data.get('map', '').strip()
     duration_mins = data.get('duration', 10) # En minutos
+    players_count = data.get('players_count', 1)
+    target_sim_id = data.get('target_sim_id', '').strip()
     
     if not group_name:
         return jsonify({"error": "El nombre del grupo es requerido"}), 400
+    if not target_sim_id:
+        return jsonify({"error": "El simulador de destino es requerido"}), 400
         
-    # Lógica de asignación automática: si hay un simulador activo y libre, entra directo
-    assigned_sim = None
+    # Buscar el simulador de destino
+    target_sim = None
     for sim in state["simulators"]:
-        if sim["active"] and sim["status"] == "available":
-            assigned_sim = sim
+        if sim["id"] == target_sim_id:
+            target_sim = sim
             break
             
-    if assigned_sim:
-        assigned_sim["status"] = "playing"
-        assigned_sim["current_session"] = {
+    if not target_sim:
+        return jsonify({"error": "Simulador no encontrado"}), 404
+        
+    # Lógica de asignación automática: si el simulador objetivo está activo y libre, entra directo
+    if target_sim["active"] and target_sim["status"] == "available":
+        target_sim["status"] = "playing"
+        target_sim["current_session"] = {
             "group_name": group_name,
             "map": map_name or "Beat Saber",
             "duration": duration_mins * 60,
+            "players_count": players_count,
             "started_at": time.time(),
             "elapsed_time": 0.0,
             "is_paused": False
@@ -309,17 +351,19 @@ def add_to_queue():
         pubsub.broadcast_state()
         return jsonify({
             "auto_assigned": True,
-            "simulator_name": assigned_sim["name"],
-            "session": assigned_sim["current_session"]
+            "simulator_name": target_sim["name"],
+            "session": target_sim["current_session"]
         })
         
-    # Si no hay libre, va a la cola normal
+    # Si está ocupado, va a la cola de este simulador
     q_id = f"q_{uuid.uuid4().hex[:8]}"
     new_entry = {
         "id": q_id,
         "group_name": group_name,
         "map": map_name or "Por definir",
         "duration": duration_mins * 60, # Guardar en segundos
+        "players_count": players_count,
+        "target_sim_id": target_sim_id,
         "created_at": time.time()
     }
     state["queue"].append(new_entry)
@@ -372,6 +416,7 @@ def start_session(sim_id):
     group_name = data.get('group_name', '').strip()
     map_name = data.get('map', '').strip()
     duration_mins = data.get('duration', 10)
+    players_count = data.get('players_count', 1)
     queue_id = data.get('queue_id') # Opcional: si proviene de la cola
     
     # Buscar el simulador
@@ -407,6 +452,7 @@ def start_session(sim_id):
             "group_name": group_name,
             "map": map_name or "Beat Saber",
             "duration": duration_mins * 60,
+            "players_count": players_count,
             "started_at": time.time(),
             "elapsed_time": 0.0,
             "is_paused": False
