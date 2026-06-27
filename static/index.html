@@ -26,19 +26,21 @@
             </div>
 
             <!-- TABLERO EN COLUMNAS POR CATEGORÍA -->
-            <div v-for="(sims, groupName) in groupedSimulators" :key="groupName" style="margin-bottom: 3rem;" v-if="sims.some(s => s.active)">
-                <h2 style="font-family: var(--font-rajdhani); font-size: 1.3rem; color: var(--color-cyan); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 1.2rem; border-left: 4px solid var(--color-cyan); padding-left: 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.4rem;">
-                    📂 {{ groupName }}
-                </h2>
-                
-                <div class="client-board-grid">
-                    <!-- Columnas de Simuladores Activos -->
-                    <div v-for="sim in sims" :key="sim.id" v-if="sim.active" class="sim-column">
-                        <div class="sim-column-header">
-                            {{ sim.name }}
-                        </div>
-                        
-                        <div class="sim-column-cards">
+            <template v-for="(sims, groupName) in groupedSimulators" :key="groupName">
+                <div v-if="sims.some(s => s.active)" style="margin-bottom: 3rem;">
+                    <h2 style="font-family: var(--font-rajdhani); font-size: 1.3rem; color: var(--color-cyan); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 1.2rem; border-left: 4px solid var(--color-cyan); padding-left: 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.4rem;">
+                        📂 {{ groupName }}
+                    </h2>
+                    
+                    <div class="client-board-grid">
+                        <!-- Columnas de Simuladores Activos -->
+                        <template v-for="sim in sims" :key="sim.id">
+                            <div v-if="sim.active" class="sim-column">
+                                <div class="sim-column-header">
+                                    {{ sim.name }}
+                                </div>
+                                
+                                <div class="sim-column-cards">
                             <!-- 1. CASO JUGANDO (Sesión Activa) -->
                             <div v-if="sim.status !== 'available' && sim.current_session" class="sim-card playing" :class="{ warning: isTimeWarning(sim), finished: isTimeFinished(sim) }">
                                 <div class="sim-header" style="margin-bottom: 0.8rem;">
@@ -105,8 +107,10 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </template>
             </div>
+        </div>
+    </template>
             
             <div v-if="!simulators.some(s => s.active)" class="queue-empty">
                 No hay simuladores activos en este momento.
