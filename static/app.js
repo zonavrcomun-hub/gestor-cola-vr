@@ -11,7 +11,13 @@ createApp({
             
             // Formularios / Controles
             newSimName: '',
+            newSimGroup: '',
             showAddSimModal: false,
+            
+            // Edición de simulador
+            editingSimId: null,
+            editingSimName: '',
+            editingSimGroup: '',
             
             // Modal de Asignación / Inicio de Sesión
             showAssignModal: false,
@@ -34,6 +40,20 @@ createApp({
                 'Assetto Corsa (Simulador Coches)'
             ]
         };
+    },
+    
+    computed: {
+        groupedSimulators() {
+            const groups = {};
+            this.simulators.forEach(sim => {
+                const groupName = sim.group || 'General';
+                if (!groups[groupName]) {
+                    groups[groupName] = [];
+                }
+                groups[groupName].push(sim);
+            });
+            return groups;
+        }
     },
     
     mounted() {
@@ -167,14 +187,51 @@ createApp({
                 const res = await fetch('/api/simulators', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: this.newSimName.trim() })
+                    body: JSON.stringify({ 
+                        name: this.newSimName.trim(),
+                        group: this.newSimGroup.trim()
+                    })
                 });
                 if (res.ok) {
                     this.newSimName = '';
+                    this.newSimGroup = '';
                     this.showAddSimModal = false;
                 }
             } catch (e) {
                 alert('Error al agregar simulador');
+            }
+        },
+
+        startSimEdit(sim) {
+            this.editingSimId = sim.id;
+            this.editingSimName = sim.name;
+            this.editingSimGroup = sim.group || 'General';
+        },
+        
+        cancelSimEdit() {
+            this.editingSimId = null;
+            this.editingSimName = '';
+            this.editingSimGroup = '';
+        },
+        
+        async saveSimEdit(simId) {
+            if (!this.editingSimName.trim()) return;
+            try {
+                const res = await fetch(`/api/simulators/${simId}/edit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: this.editingSimName.trim(),
+                        group: this.editingSimGroup.trim()
+                    })
+                });
+                if (res.ok) {
+                    this.editingSimId = null;
+                } else {
+                    alert('Error al guardar cambios');
+                }
+            } catch (e) {
+                alert('Error de conexión');
             }
         },
         

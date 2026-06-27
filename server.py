@@ -74,6 +74,10 @@ def get_current_state():
     
     for sim in state["simulators"]:
         sim_copy = sim.copy()
+        # Asegurar campo group para retrocompatibilidad
+        if "group" not in sim_copy:
+            sim_copy["group"] = "General"
+            
         if sim["status"] in ("playing", "paused") and sim["current_session"]:
             sess = sim["current_session"].copy()
             
@@ -195,6 +199,7 @@ def api_events():
 def add_simulator():
     data = request.json
     name = data.get('name', '').strip()
+    group = data.get('group', '').strip()
     if not name:
         return jsonify({"error": "El nombre es requerido"}), 400
         
@@ -202,6 +207,7 @@ def add_simulator():
     new_sim = {
         "id": sim_id,
         "name": name,
+        "group": group or "General",
         "active": True,
         "status": "available",
         "current_session": None
@@ -238,6 +244,7 @@ def toggle_simulator(sim_id):
 def edit_simulator(sim_id):
     data = request.json
     name = data.get('name', '').strip()
+    group = data.get('group', '').strip()
     if not name:
         return jsonify({"error": "El nombre es requerido"}), 400
         
@@ -245,6 +252,7 @@ def edit_simulator(sim_id):
     for sim in state["simulators"]:
         if sim["id"] == sim_id:
             sim["name"] = name
+            sim["group"] = group or "General"
             found = True
             break
             
@@ -280,6 +288,32 @@ def add_to_queue():
     if not group_name:
         return jsonify({"error": "El nombre del grupo es requerido"}), 400
         
+    # Lógica de asignación automática: si hay un simulador activo y libre, entra directo
+    assigned_sim = None
+    for sim in state["simulators"]:
+        if sim["active"] and sim["status"] == "available":
+            assigned_sim = sim
+            break
+            
+    if assigned_sim:
+        assigned_sim["status"] = "playing"
+        assigned_sim["current_session"] = {
+            "group_name": group_name,
+            "map": map_name or "Beat Saber",
+            "duration": duration_mins * 60,
+            "started_at": time.time(),
+            "elapsed_time": 0.0,
+            "is_paused": False
+        }
+        save_data()
+        pubsub.broadcast_state()
+        return jsonify({
+            "auto_assigned": True,
+            "simulator_name": assigned_sim["name"],
+            "session": assigned_sim["current_session"]
+        })
+        
+    # Si no hay libre, va a la cola normal
     q_id = f"q_{uuid.uuid4().hex[:8]}"
     new_entry = {
         "id": q_id,

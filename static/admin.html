@@ -39,90 +39,120 @@
                 <div>
                     <div class="panel">
                         <h2 class="panel-title">🎮 Simuladores de la Sala</h2>
-                        <div class="simulators-list">
-                            <div v-for="sim in simulators" :key="sim.id" class="sim-card" :class="[sim.status, { warning: isTimeWarning(sim) && sim.active, finished: isTimeFinished(sim) && sim.active, inactive: !sim.active }]">
-                                
-                                <div class="sim-header">
-                                    <div>
-                                        <div class="sim-name">{{ sim.name }}</div>
-                                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">ID: {{ sim.id }}</div>
-                                    </div>
-                                    <!-- Interruptor Activo / Inactivo -->
-                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);">
-                                            {{ sim.active ? 'Activo' : 'Apagado' }}
-                                        </span>
-                                        <label class="switch">
-                                            <input type="checkbox" v-model="sim.active" @change="toggleSimulator(sim)">
-                                            <span class="slider"></span>
-                                        </label>
-                                    </div>
-                                </div>
-                                
-                                <div class="sim-body">
-                                    <div v-if="!sim.active" class="sim-empty-state">
-                                        Simulador desactivado para hoy
-                                    </div>
-                                    <div v-else-if="sim.status === 'available'" class="sim-empty-state">
-                                        Disponible para asignar
-                                    </div>
-                                    <div v-else>
-                                        <div class="sim-group-name">{{ sim.current_session.group_name }}</div>
-                                        <div class="sim-map-name">{{ sim.current_session.map }}</div>
-                                        
-                                        <!-- Temporizador -->
-                                        <div class="timer-container">
-                                            <div class="timer-digits" :class="{ warning: isTimeWarning(sim), finished: isTimeFinished(sim) }">
-                                                {{ isTimeFinished(sim) ? '00:00' : formatTime(sim.current_session.time_left) }}
-                                                <span class="label" v-if="isTimeFinished(sim)">¡Fin!</span>
+                        
+                        <!-- Lista de Sugerencias de Grupos -->
+                        <datalist id="group-suggestions">
+                            <option v-for="(sims, name) in groupedSimulators" :value="name">{{ name }}</option>
+                        </datalist>
+                        
+                        <!-- Agrupación Visual por Categoría -->
+                        <div v-for="(sims, groupName) in groupedSimulators" :key="groupName" style="margin-bottom: 2rem;">
+                            <h3 style="font-family: var(--font-rajdhani); font-size: 1.1rem; color: var(--color-cyan); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.8rem; border-left: 3px solid var(--color-cyan); padding-left: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                                📁 {{ groupName }}
+                            </h3>
+                            
+                            <div class="simulators-list">
+                                <div v-for="sim in sims" :key="sim.id" class="sim-card" :class="[sim.status, { warning: isTimeWarning(sim) && sim.active, finished: isTimeFinished(sim) && sim.active, inactive: !sim.active }]">
+                                    
+                                    <div class="sim-header">
+                                        <!-- Modo Edición Inline -->
+                                        <div v-if="editingSimId === sim.id" style="width: 100%; margin-right: 1rem;">
+                                            <input type="text" class="form-input" v-model="editingSimName" placeholder="Nombre" style="margin-bottom: 0.4rem; padding: 4px 8px; font-size: 0.85rem;" required>
+                                            <input type="text" class="form-input" v-model="editingSimGroup" placeholder="Grupo / Categoría" style="margin-bottom: 0.4rem; padding: 4px 8px; font-size: 0.85rem;" list="group-suggestions">
+                                            <div style="display: flex; gap: 0.3rem;">
+                                                <button type="button" class="btn btn-success btn-sm" @click.stop="saveSimEdit(sim.id)">✓ Guardar</button>
+                                                <button type="button" class="btn btn-danger btn-sm" @click.stop="cancelSimEdit">✗</button>
                                             </div>
-                                            <!-- Barra de Progreso -->
-                                            <div class="progress-bar-bg">
-                                                <div class="progress-bar-fill" :style="{ width: getProgress(sim) + '%' }"></div>
+                                        </div>
+                                        
+                                        <!-- Modo Lectura Normal -->
+                                        <div v-else>
+                                            <div class="sim-name" style="display: flex; align-items: center; gap: 0.4rem;">
+                                                {{ sim.name }}
+                                                <button class="btn btn-sm" style="background: transparent; border: none; padding: 2px 4px; font-size: 0.8rem; cursor: pointer; color: var(--text-muted);" @click.stop="startSimEdit(sim)" title="Editar Nombre/Grupo">
+                                                    ✏️
+                                                </button>
+                                            </div>
+                                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">ID: {{ sim.id }}</div>
+                                        </div>
+                                        
+                                        <!-- Interruptor Activo / Inactivo -->
+                                        <div v-if="editingSimId !== sim.id" style="display: flex; align-items: center; gap: 0.5rem; margin-left: auto;">
+                                            <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);">
+                                                {{ sim.active ? 'Activo' : 'Apagado' }}
+                                            </span>
+                                            <label class="switch">
+                                                <input type="checkbox" v-model="sim.active" @change="toggleSimulator(sim)">
+                                                <span class="slider"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="sim-body">
+                                        <div v-if="!sim.active" class="sim-empty-state">
+                                            Simulador desactivado para hoy
+                                        </div>
+                                        <div v-else-if="sim.status === 'available'" class="sim-empty-state">
+                                            Disponible para asignar
+                                        </div>
+                                        <div v-else>
+                                            <div class="sim-group-name">{{ sim.current_session.group_name }}</div>
+                                            <div class="sim-map-name">{{ sim.current_session.map }}</div>
+                                            
+                                            <!-- Temporizador -->
+                                            <div class="timer-container">
+                                                <div class="timer-digits" :class="{ warning: isTimeWarning(sim), finished: isTimeFinished(sim) }">
+                                                    {{ isTimeFinished(sim) ? '00:00' : formatTime(sim.current_session.time_left) }}
+                                                    <span class="label" v-if="isTimeFinished(sim)">¡Fin!</span>
+                                                </div>
+                                                <!-- Barra de Progreso -->
+                                                <div class="progress-bar-bg">
+                                                    <div class="progress-bar-fill" :style="{ width: getProgress(sim) + '%' }"></div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <!-- CONTROLES DEL SIMULADOR -->
-                                <div class="sim-controls" v-if="sim.active">
-                                    <!-- Si está disponible -->
-                                    <div v-if="sim.status === 'available'">
-                                        <button class="btn btn-success btn-sm" style="width: 100%; justify-content: center;" @click="openAssignModal(sim)">
-                                            ▶️ Iniciar / Asignar Sesión
+                                    <!-- CONTROLES DEL SIMULADOR -->
+                                    <div class="sim-controls" v-if="sim.active">
+                                        <!-- Si está disponible -->
+                                        <div v-if="sim.status === 'available'">
+                                            <button class="btn btn-success btn-sm" style="width: 100%; justify-content: center;" @click="openAssignModal(sim)">
+                                                ▶️ Iniciar / Asignar Sesión
+                                            </button>
+                                        </div>
+                                        <!-- Si está en juego -->
+                                        <div v-else-if="sim.status === 'playing'" class="btn-group full-width">
+                                            <button class="btn btn-warning btn-sm" @click="pauseSession(sim.id)">
+                                                ⏸️ Pausar
+                                            </button>
+                                            <button class="btn btn-sm" @click="resetSession(sim.id)">
+                                                🔄 Reset
+                                            </button>
+                                            <button class="btn btn-danger btn-sm" @click="stopSession(sim.id)">
+                                                ⏹️ Terminar
+                                            </button>
+                                        </div>
+                                        <!-- Si está en pausa -->
+                                        <div v-else-if="sim.status === 'paused'" class="btn-group full-width">
+                                            <button class="btn btn-success btn-sm" @click="resumeSession(sim.id)">
+                                                ▶️ Reanudar
+                                            </button>
+                                            <button class="btn btn-sm" @click="resetSession(sim.id)">
+                                                🔄 Reset
+                                            </button>
+                                            <button class="btn btn-danger btn-sm" @click="stopSession(sim.id)">
+                                                ⏹️ Terminar
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Eliminar Simulador (solo cuando esté libre) -->
+                                    <div style="display: flex; justify-content: flex-end; margin-top: 0.8rem; border-top: 1px solid rgba(255,255,255,0.03); padding-top: 0.5rem;" v-if="sim.status === 'available' || !sim.active">
+                                        <button class="btn btn-danger btn-sm" style="background: transparent; border:none; color: var(--text-muted); padding: 2px 6px;" @click="deleteSimulator(sim.id)">
+                                            🗑️ Eliminar Simulador
                                         </button>
                                     </div>
-                                    <!-- Si está en juego -->
-                                    <div v-else-if="sim.status === 'playing'" class="btn-group full-width">
-                                        <button class="btn btn-warning btn-sm" @click="pauseSession(sim.id)">
-                                            ⏸️ Pausar
-                                        </button>
-                                        <button class="btn btn-sm" @click="resetSession(sim.id)">
-                                            🔄 Reset
-                                        </button>
-                                        <button class="btn btn-danger btn-sm" @click="stopSession(sim.id)">
-                                            ⏹️ Terminar
-                                        </button>
-                                    </div>
-                                    <!-- Si está en pausa -->
-                                    <div v-else-if="sim.status === 'paused'" class="btn-group full-width">
-                                        <button class="btn btn-success btn-sm" @click="resumeSession(sim.id)">
-                                            ▶️ Reanudar
-                                        </button>
-                                        <button class="btn btn-sm" @click="resetSession(sim.id)">
-                                            🔄 Reset
-                                        </button>
-                                        <button class="btn btn-danger btn-sm" @click="stopSession(sim.id)">
-                                            ⏹️ Terminar
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <!-- Eliminar Simulador (solo cuando esté libre) -->
-                                <div style="display: flex; justify-content: flex-end; margin-top: 0.8rem; border-top: 1px solid rgba(255,255,255,0.03); padding-top: 0.5rem;" v-if="sim.status === 'available' || !sim.active">
-                                    <button class="btn btn-danger btn-sm" style="background: transparent; border:none; color: var(--text-muted); padding: 2px 6px;" @click="deleteSimulator(sim.id)">
-                                        🗑️ Eliminar Simulador
-                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -209,6 +239,10 @@
                     <div class="form-group">
                         <label class="form-label">Nombre del Simulador</label>
                         <input type="text" class="form-input" v-model="newSimName" placeholder="Ej: Simulador 4 (VR Coaster)" required autofocus>
+                    </div>
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label class="form-label">Grupo / Categoría</label>
+                        <input type="text" class="form-input" v-model="newSimGroup" placeholder="Ej: Cabinas VR, Coches..." list="group-suggestions">
                     </div>
                     <div class="btn-group full-width" style="margin-top: 1.5rem;">
                         <button type="button" class="btn" @click="showAddSimModal = false">Cancelar</button>

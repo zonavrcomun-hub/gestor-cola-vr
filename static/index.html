@@ -29,44 +29,51 @@
             <!-- SIMULADORES ACTIVOS -->
             <div class="panel">
                 <h2 class="panel-title">🎮 Simuladores en Juego</h2>
-                <div class="sim-grid-mobile">
-                    <!-- Simuladores que están activos para jugar hoy -->
-                    <template v-for="sim in simulators" :key="sim.id">
-                        <div v-if="sim.active" class="sim-card" :class="[sim.status, { warning: isTimeWarning(sim), finished: isTimeFinished(sim) }]">
-                            <div class="sim-header">
-                                <div class="sim-name">{{ sim.name }}</div>
-                                <div class="sim-status-badge" :class="'status-' + sim.status">
-                                    {{ sim.status === 'playing' ? 'En juego' : sim.status === 'paused' ? 'Pausado' : 'Disponible' }}
+                
+                <!-- Iterar por grupos -->
+                <div v-for="(sims, groupName) in groupedSimulators" :key="groupName" style="margin-bottom: 2rem;" v-if="sims.some(s => s.active)">
+                    <h3 style="font-family: var(--font-rajdhani); font-size: 1.1rem; color: var(--color-cyan); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.8rem; border-left: 3px solid var(--color-cyan); padding-left: 0.5rem;">
+                        📂 {{ groupName }}
+                    </h3>
+                    <div class="sim-grid-mobile">
+                        <!-- Simuladores que están activos para jugar hoy -->
+                        <template v-for="sim in sims" :key="sim.id">
+                            <div v-if="sim.active" class="sim-card" :class="[sim.status, { warning: isTimeWarning(sim), finished: isTimeFinished(sim) }]">
+                                <div class="sim-header">
+                                    <div class="sim-name">{{ sim.name }}</div>
+                                    <div class="sim-status-badge" :class="'status-' + sim.status">
+                                        {{ sim.status === 'playing' ? 'En juego' : sim.status === 'paused' ? 'Pausado' : 'Disponible' }}
+                                    </div>
                                 </div>
-                            </div>
-                            
-                            <div class="sim-body">
-                                <div v-if="sim.status === 'available'" class="sim-empty-state">
-                                    Listo para el siguiente grupo
-                                </div>
-                                <div v-else>
-                                    <div class="sim-group-name">{{ sim.current_session.group_name }}</div>
-                                    <div class="sim-map-name">{{ sim.current_session.map }}</div>
-                                    
-                                    <!-- Temporizador -->
-                                    <div class="timer-container">
-                                        <div class="timer-digits" :class="{ warning: isTimeWarning(sim), finished: isTimeFinished(sim) }">
-                                            {{ isTimeFinished(sim) ? '00:00' : formatTime(sim.current_session.time_left) }}
-                                            <span class="label" v-if="isTimeFinished(sim)">¡Tiempo acabado!</span>
-                                        </div>
-                                        <!-- Barra de Progreso -->
-                                        <div class="progress-bar-bg">
-                                            <div class="progress-bar-fill" :style="{ width: getProgress(sim) + '%' }"></div>
+                                
+                                <div class="sim-body">
+                                    <div v-if="sim.status === 'available'" class="sim-empty-state">
+                                        Listo para el siguiente grupo
+                                    </div>
+                                    <div v-else>
+                                        <div class="sim-group-name">{{ sim.current_session.group_name }}</div>
+                                        <div class="sim-map-name">{{ sim.current_session.map }}</div>
+                                        
+                                        <!-- Temporizador -->
+                                        <div class="timer-container">
+                                            <div class="timer-digits" :class="{ warning: isTimeWarning(sim), finished: isTimeFinished(sim) }">
+                                                {{ isTimeFinished(sim) ? '00:00' : formatTime(sim.current_session.time_left) }}
+                                                <span class="label" v-if="isTimeFinished(sim)">¡Tiempo acabado!</span>
+                                            </div>
+                                            <!-- Barra de Progreso -->
+                                            <div class="progress-bar-bg">
+                                                <div class="progress-bar-fill" :style="{ width: getProgress(sim) + '%' }"></div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </template>
-                    
-                    <div v-if="!simulators.some(s => s.active)" class="queue-empty">
-                        No hay simuladores activos en este momento.
+                        </template>
                     </div>
+                </div>
+                
+                <div v-if="!simulators.some(s => s.active)" class="queue-empty">
+                    No hay simuladores activos en este momento.
                 </div>
             </div>
 
